@@ -39,6 +39,25 @@ jobs:
           }
           Expand-Archive -Path source-v1.7.1.zip -DestinationPath source -Force
 
+      - name: Apply packaging-only v1.7.1 installer quote fix
+        shell: pwsh
+        run: |
+          $root = Join-Path $PWD 'source\HazzKaraoke_CDG_Doctor_v1.7.1'
+          $issPath = Join-Path $root 'installer\HazzKaraoke_CDG_Doctor.iss'
+          $iss = Get-Content $issPath -Raw
+          $bad = 'ValueData: "\"{app}\{#MyAppExeName}\" \"%1\""'
+          $good = 'ValueData: """{app}\{#MyAppExeName}"" ""%1"""'
+          $count = ([regex]::Matches($iss, [regex]::Escape($bad))).Count
+          if ($count -ne 2) { throw "Expected exactly 2 installer command quoting patterns, found $count." }
+          $iss = $iss.Replace($bad, $good)
+          Set-Content -Path $issPath -Value $iss -Encoding UTF8
+          Write-Host 'Patched 2 Inno Setup file-association command values in build copy only.'
+          Set-Location $root
+          if (-not (Test-Path '.venv\Scripts\python.exe')) {
+            & py.exe -3.12 -m venv .venv
+            if ($LASTEXITCODE -ne 0) { throw 'Could not create Python 3.12 build virtual environment.' }
+          }
+
       - name: Install Inno Setup 6
         shell: pwsh
         run: |
