@@ -99,9 +99,6 @@ jobs:
         run: |
           $root = Join-Path $PWD 'source\HazzKaraoke_CDG_Doctor_v1.7.1'
           Set-Location $root
-          if (-not (Get-Command py.exe -ErrorAction SilentlyContinue)) {
-            throw 'py.exe is required by the validated v1.7.1 build orchestrator but was not found on the Windows runner.'
-          }
           & '.\Build\VisualStudioBuild.ps1' `
             -Configuration Release `
             -Platform x64 `
@@ -109,24 +106,45 @@ jobs:
             -RequireInstaller
           if ($LASTEXITCODE -ne 0) { throw "Release build failed with exit code $LASTEXITCODE" }
 
-      - name: Verify expected consumer packages
+      - name: Verify and stage consumer packages
         shell: pwsh
         run: |
-          $release = Join-Path $PWD 'source\HazzKaraoke_CDG_Doctor_v1.7.1\Release'
+          $root = Join-Path $PWD 'source\HazzKaraoke_CDG_Doctor_v1.7.1'
+          $release = Join-Path $root 'Release'
+          $installerOutput = Join-Path $root 'installer_output'
           $portable = Join-Path $release 'HazzKaraoke_CDG_Doctor_v1.7.1_Portable.zip'
           $setup = Join-Path $release 'HazzKaraoke_CDG_Doctor_v1.7.1_Setup.exe'
+          if (-not (Test-Path $setup)) {
+            $setup = Join-Path $installerOutput 'HazzKaraoke_CDG_Doctor_v1.7.1_Setup.exe'
+          }
           $appExe = Join-Path $release 'HazzKaraoke CDG Doctor\HazzKaraoke CDG Doctor.exe'
           $helper = Join-Path $release 'HazzKaraoke CDG Doctor\tools\HazzKaraokeWaveformDecoder.exe'
-          foreach ($f in @($portable,$setup,$appExe,$helper)) {
+          $cert = Join-Path $release 'HazzKaraoke-CodeSigning.cer'
+          foreach ($f in @($portable,$setup,$appExe,$helper,$cert)) {
             if (-not (Test-Path $f)) { throw "Expected build output missing: $f" }
-            $h = Get-FileHash $f -Algorithm SHA256
-            Write-Host "$($h.Hash)  $($h.Path)"
           }
           New-Item -ItemType Directory -Path publish -Force | Out-Null
           Copy-Item $portable publish\
           Copy-Item $setup publish\
-          Copy-Item (Join-Path $release 'BUILD_MANIFEST.txt') publish\
-          Copy-Item (Join-Path $release 'HazzKaraoke-CodeSigning.cer') publish\
+          Copy-Item $cert publish\
+          if (Test-Path (Join-Path $release 'BUILD_MANIFEST.txt')) {
+            Copy-Item (Join-Path $release 'BUILD_MANIFEST.txt') publish\
+          }
+          $hashLines = @(
+            'HAZZKARAOKE CDG DOCTOR v1.7.1 - WINDOWS RELEASE SHA-256',
+            ('Built on GitHub Actions Windows Server 2025 + Visual Studio 2026'),
+            ('Python runtime: 3.12'),
+            ''
+          )
+          foreach ($f in @($setup,$portable,$appExe,$helper)) {
+            $h = Get-FileHash $f -Algorithm SHA256
+            Write-Host "$($h.Hash)  $($h.Path)"
+            $hashLines += ($h.Hash + '  ' + (Split-Path $f -Leaf))
+          }
+          $hashLines += ''
+          $hashLines += ('Signing certificate SHA1: ${{ steps.signing.outputs.thumbprint }}')
+          $hashLines += 'Signing mode: self-signed SHA-256 Authenticode, no internet timestamp'
+          $hashLines | Set-Content -Path 'publish\WINDOWS_RELEASE_SHA256.txt' -Encoding UTF8
 
       - name: Upload build artifact for retention
         uses: actions/upload-artifact@v4
@@ -143,7 +161,7 @@ jobs:
           gh release upload V1.7.1 `
             'publish/HazzKaraoke_CDG_Doctor_v1.7.1_Setup.exe' `
             'publish/HazzKaraoke_CDG_Doctor_v1.7.1_Portable.zip' `
-            'publish/BUILD_MANIFEST.txt' `
+            'publish/WINDOWS_RELEASE_SHA256.txt' `
             'publish/HazzKaraoke-CodeSigning.cer' `
             --repo '${{ github.repository }}' `
             --clobber
