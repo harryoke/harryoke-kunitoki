@@ -38,17 +38,16 @@ jobs:
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
+          import re
           p = Path('index.html')
           text = p.read_text(encoding='utf-8')
-          old = '''      <div class="hero-art" aria-label="HazzKaraoke CDG Doctor">
-                <div class="hero-logo">
-                  <span class="logo-hazz">HAZZ</span>
-                  <span class="logo-karaoke">KARAOKE</span>
-                  <span class="logo-doctor">CD+G DOCTOR</span>
-                  <span class="logo-tag">It’s Alive, Alive!!</span>
-                </div>
-              </div>'''.replace('        ', '')
-          new = '''      <div class="hero-art">
+          pattern = re.compile(
+              r'\s*<div class="hero-art" aria-label="HazzKaraoke CDG Doctor">\s*'
+              r'<div class="hero-logo">.*?</div>\s*</div>',
+              re.DOTALL,
+          )
+          replacement = '''
+              <div class="hero-art">
                 <img
                   src="assets/hazzkaraoke-cdg-doctor-logo.webp"
                   alt="Hazz Karaoke CD+G Doctor"
@@ -56,11 +55,14 @@ jobs:
                   height="225"
                   style="display:block;width:min(100%,520px);height:auto;margin:0 auto;filter:drop-shadow(0 0 22px rgba(0,217,255,.24)) drop-shadow(0 0 34px rgba(255,73,0,.16))"
                 >
-              </div>'''.replace('        ', '')
-          if text.count(old) != 1:
-              raise SystemExit(f'Expected one existing hero logo block; found {text.count(old)}')
-          p.write_text(text.replace(old, new), encoding='utf-8')
-          assert 'assets/hazzkaraoke-cdg-doctor-logo.webp' in p.read_text(encoding='utf-8')
+              </div>'''
+          updated, count = pattern.subn(replacement, text, count=1)
+          if count != 1:
+              raise SystemExit(f'Expected one generated hero logo block; matched {count}')
+          p.write_text(updated, encoding='utf-8')
+          check = p.read_text(encoding='utf-8')
+          assert 'assets/hazzkaraoke-cdg-doctor-logo.webp' in check
+          assert '<span class="logo-hazz">HAZZ</span>' not in check
           print('Homepage hero updated.')
           PY
 
