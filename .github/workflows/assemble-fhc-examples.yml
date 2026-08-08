@@ -1,0 +1,52 @@
+name: Assemble Full Health Check examples
+
+on:
+  push:
+    branches:
+      - temp-healthcheck-assets
+    paths:
+      - '.github/workflows/assemble-fhc-examples.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout staged branch
+        uses: actions/checkout@v4
+        with:
+          ref: temp-healthcheck-assets
+          fetch-depth: 0
+
+      - name: Reconstruct and verify screenshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p assets/examples
+          cat .staging/fhc-before-00.b64 .staging/fhc-before-01.b64 .staging/fhc-before-02.b64 | base64 -d > assets/examples/full-health-check-before.webp
+          cat .staging/fhc-after-00.b64 .staging/fhc-after-01.b64 .staging/fhc-after-02.b64 | base64 -d > assets/examples/full-health-check-after.webp
+
+          echo '41a4944cb61bfee2bde0a21e3aa2c9e0ba3515f1c8f640b623375351cca37aef  assets/examples/full-health-check-before.webp' | sha256sum -c -
+          echo 'bbaecba62fb82695e70be9be5626fc94e84e1e5cf938b76ee17dbf8b69669fb7  assets/examples/full-health-check-after.webp' | sha256sum -c -
+
+          test "$(head -c 4 assets/examples/full-health-check-before.webp)" = 'RIFF'
+          test "$(dd if=assets/examples/full-health-check-before.webp bs=1 skip=8 count=4 status=none)" = 'WEBP'
+          test "$(head -c 4 assets/examples/full-health-check-after.webp)" = 'RIFF'
+          test "$(dd if=assets/examples/full-health-check-after.webp bs=1 skip=8 count=4 status=none)" = 'WEBP'
+
+          rm -f .staging/fhc-before-*.b64 .staging/fhc-after-*.b64
+          rm -f assets/examples/full-health-check-before.b64
+          rm -f .github/workflows/assemble-fhc-examples.yml
+          rmdir .staging 2>/dev/null || true
+
+      - name: Commit verified screenshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Add verified Full Health Check before and after screenshots'
+          git push origin HEAD:temp-healthcheck-assets
