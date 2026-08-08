@@ -24,7 +24,8 @@ jobs:
           Get-Command python.exe -ErrorAction SilentlyContinue | Format-List Source
           Get-Command py.exe -ErrorAction SilentlyContinue | Format-List Source
           Get-Command gh.exe -ErrorAction SilentlyContinue | Format-List Source
-          & "$env:ProgramFiles(x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          & $vswhere -latest -products * -property installationPath
 
       - name: Download exact v1.7.1 source/build release
         shell: pwsh
@@ -42,15 +43,15 @@ jobs:
         shell: pwsh
         run: |
           $iscc = @(
-            "$env:ProgramFiles(x86)\Inno Setup 6\ISCC.exe",
-            "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+            (Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'),
+            (Join-Path $env:ProgramFiles 'Inno Setup 6\ISCC.exe')
           ) | Where-Object { Test-Path $_ } | Select-Object -First 1
           if (-not $iscc) {
             choco install innosetup --no-progress -y
           }
           $iscc = @(
-            "$env:ProgramFiles(x86)\Inno Setup 6\ISCC.exe",
-            "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+            (Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'),
+            (Join-Path $env:ProgramFiles 'Inno Setup 6\ISCC.exe')
           ) | Where-Object { Test-Path $_ } | Select-Object -First 1
           if (-not $iscc) { throw 'Inno Setup 6 installation failed.' }
           Write-Host "Inno Setup: $iscc"
