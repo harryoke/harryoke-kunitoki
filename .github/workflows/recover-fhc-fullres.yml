@@ -1,0 +1,131 @@
+name: Recover full-resolution Full Health Check screenshots
+
+on:
+  push:
+    branches:
+      - temp-healthcheck-assets
+    paths:
+      - '.github/workflows/recover-fhc-fullres.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: temp-healthcheck-assets
+          fetch-depth: 0
+
+      - name: Recover exact base64 pieces and reconstruct lossless WebPs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+
+          ALPHABET = b'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='
+
+          def gsha(data: bytes) -> str:
+              return hashlib.sha1(f'blob {len(data)}\0'.encode() + data).hexdigest()
+
+          # BEFORE: parts 01 and 02 are exact. Part 00 lost one character.
+          p = Path('.staging/fhc-before-00.b64')
+          bad = p.read_bytes()
+          target = 'fa7d1032339c22fb3d9f94fdb7b477a996ccf9cd'
+          exact_first = Path('.staging/fhc-before-00a.b64').read_bytes()
+          if gsha(bad) != target:
+              found = None
+              # Try the known one-character-loss shapes.
+              candidate = exact_first + bad[len(exact_first)-1:]
+              if gsha(candidate) == target:
+                  found = candidate
+              elif bad.startswith(exact_first):
+                  tail = bad[len(exact_first):]
+                  for pos in range(len(tail)+1):
+                      for ch in ALPHABET:
+                          candidate = exact_first + tail[:pos] + bytes((ch,)) + tail[pos:]
+                          if gsha(candidate) == target:
+                              found = candidate
+                              break
+                      if found is not None:
+                          break
+              if found is None:
+                  raise SystemExit('Could not repair BEFORE part 00')
+              p.write_bytes(found)
+          assert gsha(p.read_bytes()) == target
+          assert gsha(Path('.staging/fhc-before-01.b64').read_bytes()) == '3752ebe32d70fba85c17ab5f60f8cae132cb3465'
+          assert gsha(Path('.staging/fhc-before-02.b64').read_bytes()) == 'a469ec4ea70a25e60150ae702997f1c4a61558d4'
+
+          # AFTER: part 00 and the first half of part 01 are exact.
+          assert gsha(Path('.staging/fhc-after-00.b64').read_bytes()) == 'bfbee438ce6c2cd6638697edebf4c53131cf7000'
+          assert gsha(Path('.staging/fhc-after-01a.b64').read_bytes()) == '67068a6a1f1fcc054cc347f0d7a9a4d4e37affb8'
+
+          # Recover the missing second 10k half by scanning oversized/failed staging
+          # transfers for the exact known Git blob hash.
+          target_half = '4692b1c4a84fca32a83956f32a2dd6568a34eca0'
+          recovered = None
+          sources = []
+          for fn in ('.staging/fhc-after-01b.b64', '.staging/fhc-after-01.b64'):
+              q = Path(fn)
+              if q.exists():
+                  sources.append((fn, q.read_bytes()))
+          for fn, data in sources:
+              if len(data) >= 10000:
+                  for start in range(0, len(data)-10000+1):
+                      window = data[start:start+10000]
+                      if gsha(window) == target_half:
+                          recovered = window
+                          print('Recovered AFTER middle half from', fn, 'offset', start)
+                          break
+              if recovered is not None:
+                  break
+          if recovered is None:
+              raise SystemExit('Exact AFTER middle half was not found in existing staging data')
+          Path('.staging/fhc-after-01c.b64').write_bytes(recovered)
+
+          # AFTER final part is correct length with a known one-character substitution.
+          p = Path('.staging/fhc-after-02.b64')
+          data = p.read_bytes()
+          target = '1c189c0e5a5cae1e2024dbe965f701c1e0c05d6a'
+          if gsha(data) != target:
+              found = None
+              for pos, old in enumerate(data):
+                  for ch in ALPHABET:
+                      if ch == old:
+                          continue
+                      candidate = data[:pos] + bytes((ch,)) + data[pos+1:]
+                      if gsha(candidate) == target:
+                          found = candidate
+                          break
+                  if found is not None:
+                      break
+              if found is None:
+                  raise SystemExit('Could not repair AFTER final part')
+              p.write_bytes(found)
+          assert gsha(p.read_bytes()) == target
+          PY
+
+          mkdir -p assets/examples
+          cat .staging/fhc-before-00.b64 .staging/fhc-before-01.b64 .staging/fhc-before-02.b64 | base64 -d > assets/examples/full-health-check-before-fullres.webp
+          cat .staging/fhc-after-00.b64 .staging/fhc-after-01a.b64 .staging/fhc-after-01c.b64 .staging/fhc-after-02.b64 | base64 -d > assets/examples/full-health-check-after-fullres.webp
+
+          echo '5df4505448845784cf52e543fc78cbd44264c686ded281bb818088c210719198  assets/examples/full-health-check-before-fullres.webp' | sha256sum -c -
+          echo 'f6aaaf0be36940d1108981aa13b7433c3a1e1d2e69f0c0f8bbfb52a0ac35842e  assets/examples/full-health-check-after-fullres.webp' | sha256sum -c -
+          test "$(head -c 4 assets/examples/full-health-check-before-fullres.webp)" = RIFF
+          test "$(dd if=assets/examples/full-health-check-before-fullres.webp bs=1 skip=8 count=4 status=none)" = WEBP
+          test "$(head -c 4 assets/examples/full-health-check-after-fullres.webp)" = RIFF
+          test "$(dd if=assets/examples/full-health-check-after-fullres.webp bs=1 skip=8 count=4 status=none)" = WEBP
+
+      - name: Commit recovered full-resolution screenshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/examples/full-health-check-before-fullres.webp assets/examples/full-health-check-after-fullres.webp
+          git commit -m 'Recover full-resolution Full Health Check screenshots'
+          git push origin HEAD:temp-healthcheck-assets
