@@ -1,0 +1,130 @@
+name: Finalize Full Health Check example
+
+on:
+  push:
+    branches:
+      - temp-healthcheck-assets
+    paths:
+      - '.github/workflows/finalize-fhc-example.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout staged branch
+        uses: actions/checkout@v4
+        with:
+          ref: temp-healthcheck-assets
+          fetch-depth: 0
+
+      - name: Verify exact screenshot binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '41a4944cb61bfee2bde0a21e3aa2c9e0ba3515f1c8f640b623375351cca37aef  assets/examples/full-health-check-before.webp' | sha256sum -c -
+          echo 'bbaecba62fb82695e70be9be5626fc94e84e1e5cf938b76ee17dbf8b69669fb7  assets/examples/full-health-check-after.webp' | sha256sum -c -
+          test "$(head -c 4 assets/examples/full-health-check-before.webp)" = 'RIFF'
+          test "$(dd if=assets/examples/full-health-check-before.webp bs=1 skip=8 count=4 status=none)" = 'WEBP'
+          test "$(head -c 4 assets/examples/full-health-check-after.webp)" = 'RIFF'
+          test "$(dd if=assets/examples/full-health-check-after.webp bs=1 skip=8 count=4 status=none)" = 'WEBP'
+
+      - name: Add Full Health Check repair case to website
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('script.js')
+          s = p.read_text(encoding='utf-8')
+          marker = 'FULL_HEALTH_CHECK_EXAMPLE_V1'
+          if marker not in s:
+              s += r'''
+
+/* FULL_HEALTH_CHECK_EXAMPLE_V1 */
+const repairExamplesShell = document.querySelector('#examples .shell');
+if (repairExamplesShell && !document.getElementById('full-health-check-example')) {
+  const healthStyles = document.createElement('style');
+  healthStyles.id = 'full-health-check-example-style';
+  healthStyles.textContent = `
+    .repair-case{margin-top:34px;padding:26px;border:1px solid rgba(68,218,255,.24);border-radius:18px;background:linear-gradient(180deg,rgba(10,24,37,.96),rgba(5,13,22,.98));box-shadow:0 20px 65px rgba(0,0,0,.24)}
+    .repair-case-kicker{display:flex;align-items:center;gap:10px;margin-bottom:10px;color:#66ecff;font-size:11px;font-weight:900;letter-spacing:.14em;text-transform:uppercase}
+    .repair-case-kicker span{padding:6px 9px;border:1px solid rgba(64,221,255,.3);border-radius:999px;background:rgba(46,211,255,.07)}
+    .repair-case h3{margin:0 0 9px;color:#f4fbff;font-size:clamp(25px,3vw,38px);letter-spacing:-.035em}
+    .repair-case-intro{max-width:850px;margin:0 0 22px;color:#93aabd;font-size:15px;line-height:1.65}
+    .repair-case-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+    .repair-case-panel{margin:0;min-width:0;padding:14px;border-radius:14px;background:#050a10;border:1px solid #17394b}
+    .repair-case-panel.before{border-color:rgba(255,82,128,.3)}
+    .repair-case-panel.after{border-color:rgba(78,255,159,.32);box-shadow:0 0 36px rgba(78,255,159,.035)}
+    .repair-case-label{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 11px}
+    .repair-case-label b{font-size:12px;letter-spacing:.11em;text-transform:uppercase}
+    .repair-case-panel.before .repair-case-label b{color:#ff9eb9}
+    .repair-case-panel.after .repair-case-label b{color:#83ffb7}
+    .repair-case-label span{color:#688295;font-size:12px}
+    .repair-case-panel a{display:block;overflow:hidden;border-radius:9px;border:1px solid #17384a;background:#080c12;transition:transform .2s ease,border-color .2s ease}
+    .repair-case-panel a:hover{transform:translateY(-2px);border-color:#40dfff}
+    .repair-case-panel img{display:block;width:100%;height:auto;background:#0b0d10}
+    .repair-case-panel figcaption{padding:10px 2px 1px;color:#d9edf7;font-size:13px}
+    .repair-case-result{display:flex;gap:11px;margin-top:18px;padding:14px 16px;border:1px solid rgba(80,255,163,.2);border-radius:10px;background:rgba(65,255,157,.045);color:#91a9b8;font-size:13px;line-height:1.55}
+    .repair-case-result strong{color:#79ffae;white-space:nowrap}
+    @media(max-width:800px){.repair-case{padding:17px}.repair-case-grid{grid-template-columns:1fr}.repair-case-result{flex-direction:column}.repair-case-result strong{white-space:normal}}
+    @media(prefers-reduced-motion:reduce){.repair-case-panel a{transition:none}}
+  `;
+  document.head.appendChild(healthStyles);
+
+  const healthCase = document.createElement('article');
+  healthCase.id = 'full-health-check-example';
+  healthCase.className = 'repair-case';
+  healthCase.innerHTML = `
+    <div class="repair-case-kicker"><span>EXAMPLE 2</span> FULL HEALTH CHECK REPAIR</div>
+    <h3>Corrupted visuals → clean lyrics.</h3>
+    <p class="repair-case-intro">A real CDG Doctor diagnosis and repair. The first screenshot shows overlapping, corrupted lyric graphics in the CD+G preview. The second shows the same track after the Full Health Check safe repair workflow.</p>
+    <div class="repair-case-grid">
+      <figure class="repair-case-panel before">
+        <div class="repair-case-label"><b>BEFORE</b><span>Corrupted visuals</span></div>
+        <a href="assets/examples/full-health-check-before.webp" target="_blank" rel="noopener" aria-label="Open corrupted CDG Doctor screenshot full size">
+          <img src="assets/examples/full-health-check-before.webp" alt="HazzKaraoke CDG Doctor showing corrupted overlapping lyric visuals before Full Health Check repair" width="1920" height="1032" loading="lazy">
+        </a>
+        <figcaption>CDG Doctor — Corrupted Visuals</figcaption>
+      </figure>
+      <figure class="repair-case-panel after">
+        <div class="repair-case-label"><b>AFTER</b><span>Full Health Check fixed</span></div>
+        <a href="assets/examples/full-health-check-after.webp" target="_blank" rel="noopener" aria-label="Open repaired CDG Doctor screenshot full size">
+          <img src="assets/examples/full-health-check-after.webp" alt="HazzKaraoke CDG Doctor showing clean repaired lyrics after Full Health Check repair" width="1920" height="1032" loading="lazy">
+        </a>
+        <figcaption>Full Health Check — Fixed</figcaption>
+      </figure>
+    </div>
+    <div class="repair-case-result"><strong>REAL REPAIR</strong><span>The diagnostic screenshot reports 118 findings, with 117 suitable for automatic/safe repair. The after screenshot shows the cleaned lyric display following the safe repair workflow.</span></div>
+  `;
+
+  const existingNote = repairExamplesShell.querySelector('.repair-examples-note');
+  if (existingNote) existingNote.insertAdjacentElement('beforebegin', healthCase);
+  else repairExamplesShell.appendChild(healthCase);
+}
+'''
+              p.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Remove temporary transfer machinery
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .staging
+          rm -f assets/examples/full-health-check-before.b64
+          rm -f .github/workflows/assemble-fhc-examples.yml
+          rm -f .github/workflows/repair-and-assemble-fhc.yml
+          rm -f .github/workflows/finalize-fhc-example.yml
+
+      - name: Commit clean final branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Add Full Health Check before and after repair example'
+          git push origin HEAD:temp-healthcheck-assets
