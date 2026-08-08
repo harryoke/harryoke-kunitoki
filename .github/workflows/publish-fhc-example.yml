@@ -1,0 +1,62 @@
+name: Publish Full Health Check example
+
+on:
+  push:
+    branches:
+      - temp-healthcheck-assets
+    paths:
+      - '.github/workflows/publish-fhc-example.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout candidate branch
+        uses: actions/checkout@v4
+        with:
+          ref: temp-healthcheck-assets
+          fetch-depth: 0
+
+      - name: Verify candidate content
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '41a4944cb61bfee2bde0a21e3aa2c9e0ba3515f1c8f640b623375351cca37aef  assets/examples/full-health-check-before.webp' | sha256sum -c -
+          echo 'bbaecba62fb82695e70be9be5626fc94e84e1e5cf938b76ee17dbf8b69669fb7  assets/examples/full-health-check-after.webp' | sha256sum -c -
+          grep -q 'FULL_HEALTH_CHECK_EXAMPLE_V1' script.js
+          test ! -d .staging
+          test ! -e assets/examples/full-health-check-before.b64
+          test ! -e .github/workflows/assemble-fhc-examples.yml
+          test ! -e .github/workflows/repair-and-assemble-fhc.yml
+          test ! -e .github/workflows/finalize-fhc-example.yml
+
+      - name: Remove this one-time publisher
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/publish-fhc-example.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Remove temporary Full Health Check publisher'
+          git push origin HEAD:temp-healthcheck-assets
+
+      - name: Verify exact live diff and publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin cdg-doctor-site
+          printf '%s\n' \
+            'assets/examples/full-health-check-after.webp' \
+            'assets/examples/full-health-check-before.webp' \
+            'script.js' > /tmp/expected.txt
+          git diff --name-only origin/cdg-doctor-site...HEAD | sort > /tmp/actual.txt
+          echo 'Expected live diff:'
+          cat /tmp/expected.txt
+          echo 'Actual live diff:'
+          cat /tmp/actual.txt
+          diff -u /tmp/expected.txt /tmp/actual.txt
+          git push origin HEAD:cdg-doctor-site
