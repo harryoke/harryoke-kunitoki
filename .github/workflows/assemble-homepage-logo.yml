@@ -1,0 +1,50 @@
+name: Assemble homepage logo
+
+on:
+  push:
+    branches:
+      - cdg-doctor-site
+
+permissions:
+  contents: write
+
+jobs:
+  assemble-logo:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out website branch
+        uses: actions/checkout@v4
+        with:
+          ref: cdg-doctor-site
+          fetch-depth: 0
+
+      - name: Assemble and verify logo asset
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .logo-parts/part01.txt
+          test -f .logo-parts/part08.txt
+          mkdir -p assets
+          cat .logo-parts/part*.txt | base64 --decode > assets/hazzkaraoke-cdg-doctor-logo.webp
+          actual="$(stat -c%s assets/hazzkaraoke-cdg-doctor-logo.webp)"
+          echo "Assembled logo size: ${actual} bytes"
+          test "$actual" -eq 69056
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('assets/hazzkaraoke-cdg-doctor-logo.webp')
+          b = p.read_bytes()
+          assert b[:4] == b'RIFF' and b[8:12] == b'WEBP', 'Not a valid WebP container'
+          print('WebP container signature verified.')
+          PY
+
+      - name: Commit finished image and remove staging pieces
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .logo-parts
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/hazzkaraoke-cdg-doctor-logo.webp .logo-parts
+          git commit -m "Add supplied HazzKaraoke CDG Doctor homepage logo"
+          git push origin HEAD:cdg-doctor-site
