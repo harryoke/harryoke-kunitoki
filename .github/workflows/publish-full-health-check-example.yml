@@ -1,0 +1,121 @@
+name: Publish Full Health Check example
+
+on:
+  push:
+    branches:
+      - cdg-doctor-site
+    paths:
+      - '.github/workflows/publish-full-health-check-example.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout website branch
+        uses: actions/checkout@v4
+        with:
+          ref: cdg-doctor-site
+          fetch-depth: 0
+
+      - name: Decode and verify screenshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 -d assets/examples/full-health-check-before.webp.b64.txt > assets/examples/full-health-check-before.webp
+          base64 -d assets/examples/full-health-check-after.webp.b64.txt > assets/examples/full-health-check-after.webp
+          echo '5df4505448845784cf52e543fc78cbd44264c686ded281bb818088c210719198  assets/examples/full-health-check-before.webp' | sha256sum -c -
+          echo 'f6aaaf0be36940d1108981aa13b7433c3a1e1d2e69f0c0f8bbfb52a0ac35842e  assets/examples/full-health-check-after.webp' | sha256sum -c -
+          test "$(head -c 4 assets/examples/full-health-check-before.webp)" = 'RIFF'
+          test "$(dd if=assets/examples/full-health-check-before.webp bs=1 skip=8 count=4 status=none)" = 'WEBP'
+          test "$(head -c 4 assets/examples/full-health-check-after.webp)" = 'RIFF'
+          test "$(dd if=assets/examples/full-health-check-after.webp bs=1 skip=8 count=4 status=none)" = 'WEBP'
+
+      - name: Add Example 2 to the homepage script
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('script.js')
+          s = p.read_text(encoding='utf-8')
+          if 'full-health-check-before.webp' not in s:
+              marker = '      <p class="repair-examples-note reveal"><b>REAL OUTPUT</b>'
+              block = '''
+      <div class="repair-example-case-heading reveal" style="margin:42px 0 20px">
+        <p class="eyebrow"><span class="eyebrow-line"></span> EXAMPLE 2 · FULL HEALTH CHECK REPAIR</p>
+        <h3 style="margin:8px 0 8px;font-size:clamp(28px,4vw,42px);color:#f4fbff">Corrupted visuals → clean lyrics.</h3>
+        <p style="margin:0;color:#97adbd;max-width:760px">A real CDG Doctor session showing corrupted lyric graphics before repair and the clean display after running the Full Health Check repair workflow. Click either screenshot to inspect the full application view.</p>
+      </div>
+
+      <div class="repair-example-group before reveal">
+        <div class="repair-example-head">
+          <div><span class="repair-example-badge">BEFORE</span><strong>CDG Doctor — Corrupted Visuals</strong></div>
+          <span class="note">Full application view before repair</span>
+        </div>
+        <div class="repair-example-grid" style="grid-template-columns:1fr">
+          <figure class="repair-example-card">
+            <a href="assets/examples/full-health-check-before.webp" target="_blank" rel="noopener" aria-label="Open corrupted CDG Doctor interface screenshot full size">
+              <img src="assets/examples/full-health-check-before.webp" alt="CDG Doctor showing corrupted overlapping lyric visuals before Full Health Check repair" width="1920" height="1032" loading="lazy" style="aspect-ratio:240/129">
+            </a>
+            <figcaption><b>Corrupted visuals before repair</b><span>FULL HEALTH CHECK · BEFORE</span></figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div class="repair-example-group after reveal">
+        <div class="repair-example-head">
+          <div><span class="repair-example-badge">AFTER</span><strong>Full Health Check — Fixed</strong></div>
+          <span class="note">Clean lyric display after safe repair</span>
+        </div>
+        <div class="repair-example-grid" style="grid-template-columns:1fr">
+          <figure class="repair-example-card">
+            <a href="assets/examples/full-health-check-after.webp" target="_blank" rel="noopener" aria-label="Open repaired CDG Doctor interface screenshot full size">
+              <img src="assets/examples/full-health-check-after.webp" alt="CDG Doctor showing clean lyric graphics after Full Health Check repair" width="1920" height="1032" loading="lazy" style="aspect-ratio:240/129">
+            </a>
+            <figcaption><b>Full Health Check repaired display</b><span>FULL HEALTH CHECK · AFTER</span></figcaption>
+          </figure>
+        </div>
+      </div>
+
+'''
+              if marker not in s:
+                  raise SystemExit('Could not locate repair-examples note marker')
+              s = s.replace(marker, block + marker, 1)
+              p.write_text(s, encoding='utf-8')
+
+      - name: Remove temporary staging files
+        shell: bash
+        run: |
+          rm -f assets/examples/full-health-check-before.webp.b64.txt
+          rm -f assets/examples/full-health-check-after.webp.b64.txt
+          rm -f assets/examples/.placeholder.txt
+          rm -f assets/examples/.blobtest.txt
+          rm -f assets/examples/.blobtest2.txt
+          rm -f assets/examples/.blobtest3.txt
+          rm -f assets/examples/.blobtest4.txt
+          rm -f assets/examples/.blobtest5.txt
+          rm -f assets/examples/.blobroute-note.txt
+          rm -f .github/workflows/publish-full-health-check-example.yml
+
+      - name: Verify final public tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f assets/examples/full-health-check-before.webp
+          test -f assets/examples/full-health-check-after.webp
+          grep -q 'EXAMPLE 2 · FULL HEALTH CHECK REPAIR' script.js
+          grep -q 'full-health-check-before.webp' script.js
+          grep -q 'full-health-check-after.webp' script.js
+          test ! -e assets/examples/full-health-check-before.webp.b64.txt
+          test ! -e assets/examples/full-health-check-after.webp.b64.txt
+
+      - name: Commit public example
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Add Full Health Check before and after interface example'
+          git push origin HEAD:cdg-doctor-site
