@@ -1,0 +1,64 @@
+name: Rebuild homepage PNG logo
+
+on:
+  push:
+    branches:
+      - cdg-doctor-site
+    paths:
+      - .github/workflows/rebuild-homepage-logo.yml
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild-logo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out website branch
+        uses: actions/checkout@v4
+        with:
+          ref: cdg-doctor-site
+          fetch-depth: 0
+
+      - name: Reconstruct and verify PNG
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat assets/logo-part-0.bin assets/logo-part-1.bin assets/logo-part-2.bin assets/logo-part-3.bin > assets/hazzkaraoke-cdg-doctor-logo.png
+          test "$(stat -c%s assets/hazzkaraoke-cdg-doctor-logo.png)" -eq 25851
+          echo "bcab14e1ff9b8b395168b42c2da84d2359a918e112ad32c445928f4cbde84d8e  assets/hazzkaraoke-cdg-doctor-logo.png" | sha256sum -c -
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('assets/hazzkaraoke-cdg-doctor-logo.png')
+          b = p.read_bytes()
+          assert b[:8] == b'\x89PNG\r\n\x1a\n'
+          print('PNG signature and checksum verified.')
+          PY
+
+      - name: Point homepage at verified PNG
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          old = 'https://raw.githubusercontent.com/harryoke/harryoke-kunitoki/cdg-doctor-site/assets/hazzkaraoke-cdg-doctor-logo.webp'
+          if old not in s:
+              raise SystemExit('Expected raw GitHub logo URL not found')
+          s = s.replace(old, 'assets/hazzkaraoke-cdg-doctor-logo.png', 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Clean staging files and commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f assets/logo-part-0.bin assets/logo-part-1.bin assets/logo-part-2.bin assets/logo-part-3.bin
+          rm -f assets/hazzkaraoke-cdg-doctor-logo.webp
+          rm -f .github/workflows/rebuild-homepage-logo.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix homepage logo with verified PNG asset"
+          git push origin HEAD:cdg-doctor-site
