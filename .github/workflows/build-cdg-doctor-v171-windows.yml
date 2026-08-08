@@ -1,0 +1,129 @@
+name: Build CDG Doctor v1.7.1 Windows packages
+
+on:
+  push:
+    branches:
+      - cdg-doctor-site
+    paths:
+      - .github/workflows/build-cdg-doctor-v171-windows.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-2025-vs2026
+    timeout-minutes: 45
+
+    steps:
+      - name: Show Windows build environment
+        shell: pwsh
+        run: |
+          Write-Host "Runner image: $env:ImageOS / $env:ImageVersion"
+          Get-Command python.exe -ErrorAction SilentlyContinue | Format-List Source
+          Get-Command py.exe -ErrorAction SilentlyContinue | Format-List Source
+          Get-Command gh.exe -ErrorAction SilentlyContinue | Format-List Source
+          & "$env:ProgramFiles(x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath
+
+      - name: Download exact v1.7.1 source/build release
+        shell: pwsh
+        run: |
+          $url = 'https://github.com/harryoke/harryoke-kunitoki/releases/download/V1.7.1/HazzKaraoke_CDG_Doctor_v1.7.1.zip'
+          Invoke-WebRequest -Uri $url -OutFile source-v1.7.1.zip
+          $hash = (Get-FileHash source-v1.7.1.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          Write-Host "Downloaded source SHA256=$hash"
+          if ($hash -ne '0af7430cf75a02c74e5df45b901994af327ce4e0a2731178365cfc2f215aebc7') {
+            throw "Source package checksum mismatch: $hash"
+          }
+          Expand-Archive -Path source-v1.7.1.zip -DestinationPath source -Force
+
+      - name: Install Inno Setup 6
+        shell: pwsh
+        run: |
+          $iscc = @(
+            "$env:ProgramFiles(x86)\Inno Setup 6\ISCC.exe",
+            "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+          ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $iscc) {
+            choco install innosetup --no-progress -y
+          }
+          $iscc = @(
+            "$env:ProgramFiles(x86)\Inno Setup 6\ISCC.exe",
+            "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+          ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $iscc) { throw 'Inno Setup 6 installation failed.' }
+          Write-Host "Inno Setup: $iscc"
+
+      - name: Create ephemeral HazzKaraoke code-signing certificate
+        id: signing
+        shell: pwsh
+        run: |
+          $cert = New-SelfSignedCertificate `
+            -Type Custom `
+            -Subject 'CN=HazzKaraoke' `
+            -FriendlyName 'HazzKaraoke CDG Doctor GitHub Release Build' `
+            -CertStoreLocation 'Cert:\CurrentUser\My' `
+            -KeyAlgorithm RSA `
+            -KeyLength 3072 `
+            -HashAlgorithm SHA256 `
+            -KeyUsage DigitalSignature `
+            -NotAfter (Get-Date).AddYears(5) `
+            -TextExtension @('2.5.29.37={text}1.3.6.1.5.5.7.3.3')
+          if (-not $cert.HasPrivateKey) { throw 'Temporary signing certificate has no private key.' }
+          Write-Host "Signing thumbprint: $($cert.Thumbprint)"
+          "thumbprint=$($cert.Thumbprint)" >> $env:GITHUB_OUTPUT
+
+      - name: Build, test, sign and package v1.7.1
+        shell: pwsh
+        run: |
+          $root = Join-Path $PWD 'source\HazzKaraoke_CDG_Doctor_v1.7.1'
+          Set-Location $root
+          if (-not (Get-Command py.exe -ErrorAction SilentlyContinue)) {
+            throw 'py.exe is required by the validated v1.7.1 build orchestrator but was not found on the Windows runner.'
+          }
+          & '.\Build\VisualStudioBuild.ps1' `
+            -Configuration Release `
+            -Platform x64 `
+            -Thumbprint '${{ steps.signing.outputs.thumbprint }}' `
+            -RequireInstaller
+          if ($LASTEXITCODE -ne 0) { throw "Release build failed with exit code $LASTEXITCODE" }
+
+      - name: Verify expected consumer packages
+        shell: pwsh
+        run: |
+          $release = Join-Path $PWD 'source\HazzKaraoke_CDG_Doctor_v1.7.1\Release'
+          $portable = Join-Path $release 'HazzKaraoke_CDG_Doctor_v1.7.1_Portable.zip'
+          $setup = Join-Path $release 'HazzKaraoke_CDG_Doctor_v1.7.1_Setup.exe'
+          $appExe = Join-Path $release 'HazzKaraoke CDG Doctor\HazzKaraoke CDG Doctor.exe'
+          $helper = Join-Path $release 'HazzKaraoke CDG Doctor\tools\HazzKaraokeWaveformDecoder.exe'
+          foreach ($f in @($portable,$setup,$appExe,$helper)) {
+            if (-not (Test-Path $f)) { throw "Expected build output missing: $f" }
+            $h = Get-FileHash $f -Algorithm SHA256
+            Write-Host "$($h.Hash)  $($h.Path)"
+          }
+          New-Item -ItemType Directory -Path publish -Force | Out-Null
+          Copy-Item $portable publish\
+          Copy-Item $setup publish\
+          Copy-Item (Join-Path $release 'BUILD_MANIFEST.txt') publish\
+          Copy-Item (Join-Path $release 'HazzKaraoke-CodeSigning.cer') publish\
+
+      - name: Upload build artifact for retention
+        uses: actions/upload-artifact@v4
+        with:
+          name: HazzKaraoke-CDG-Doctor-v1.7.1-Windows
+          path: publish/*
+          if-no-files-found: error
+
+      - name: Publish installer and portable ZIP to existing V1.7.1 release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload V1.7.1 `
+            'publish/HazzKaraoke_CDG_Doctor_v1.7.1_Setup.exe' `
+            'publish/HazzKaraoke_CDG_Doctor_v1.7.1_Portable.zip' `
+            'publish/BUILD_MANIFEST.txt' `
+            'publish/HazzKaraoke-CodeSigning.cer' `
+            --repo '${{ github.repository }}' `
+            --clobber
