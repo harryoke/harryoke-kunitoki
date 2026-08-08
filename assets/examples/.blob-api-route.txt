@@ -1,1 +1,0 @@
-The next write uses GitHub create_blob directly.
