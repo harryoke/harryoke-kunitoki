@@ -106,8 +106,8 @@ if (problemStrip && !document.getElementById('examples')) {
         </div>
         <div class="repair-example-grid" style="grid-template-columns:1fr">
           <figure class="repair-example-card">
-            <a href="assets/examples/full-health-check-before.webp" target="_blank" rel="noopener" aria-label="Open corrupted CDG Doctor interface screenshot">
-              <img src="assets/examples/full-health-check-before.webp" alt="CDG Doctor showing corrupted overlapping lyric visuals before Full Health Check repair" width="640" height="344" loading="lazy" style="aspect-ratio:80/43">
+            <a href="assets/examples/full-health-check-before-fullres.webp" target="_blank" rel="noopener" aria-label="Open corrupted CDG Doctor interface screenshot">
+              <img src="assets/examples/full-health-check-before-fullres.webp" alt="CDG Doctor showing corrupted overlapping lyric visuals before Full Health Check repair" width="1920" height="1032" loading="lazy" style="aspect-ratio:240/129">
             </a>
             <figcaption><b>Corrupted visuals before repair</b><span>FULL HEALTH CHECK · BEFORE</span></figcaption>
           </figure>
@@ -121,15 +121,15 @@ if (problemStrip && !document.getElementById('examples')) {
         </div>
         <div class="repair-example-grid" style="grid-template-columns:1fr">
           <figure class="repair-example-card">
-            <a href="assets/examples/full-health-check-after.webp" target="_blank" rel="noopener" aria-label="Open repaired CDG Doctor interface screenshot">
-              <img src="assets/examples/full-health-check-after.webp" alt="CDG Doctor showing clean lyric graphics after Full Health Check repair" width="640" height="344" loading="lazy" style="aspect-ratio:80/43">
+            <a href="assets/examples/full-health-check-after-fullres.webp" target="_blank" rel="noopener" aria-label="Open repaired CDG Doctor interface screenshot">
+              <img src="assets/examples/full-health-check-after-fullres.webp" alt="CDG Doctor showing clean lyric graphics after Full Health Check repair" width="1920" height="1032" loading="lazy" style="aspect-ratio:240/129">
             </a>
             <figcaption><b>Full Health Check repaired display</b><span>FULL HEALTH CHECK · AFTER</span></figcaption>
           </figure>
         </div>
       </div>
 
-      <p class="repair-examples-note reveal"><b>REAL OUTPUT</b><span>These are real repair-workflow screenshots with no visual retouching. The CD+G frame examples are lossless web copies; the full CDG Doctor interface screenshots are web-optimised for faster loading.</span></p>
+      <p class="repair-examples-note reveal"><b>REAL OUTPUT</b><span>These are real repair-workflow screenshots with no visual retouching. The CD+G frame examples are lossless web copies; the full CDG Doctor interface screenshots are full-resolution lossless 1920 × 1032 copies.</span></p>
     </div>
   `;
   problemStrip.insertAdjacentElement('afterend', section);
