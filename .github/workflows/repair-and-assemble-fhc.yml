@@ -1,0 +1,124 @@
+name: Repair and assemble Full Health Check examples
+
+on:
+  push:
+    branches:
+      - temp-healthcheck-assets
+    paths:
+      - '.github/workflows/repair-and-assemble-fhc.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair-and-assemble:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout staged branch
+        uses: actions/checkout@v4
+        with:
+          ref: temp-healthcheck-assets
+          fetch-depth: 0
+
+      - name: Repair damaged base64 staging chunks by exact Git blob hash
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+
+          ALPHABET = b'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='
+
+          def git_sha(data: bytes) -> str:
+              head = f'blob {len(data)}\0'.encode()
+              return hashlib.sha1(head + data).hexdigest()
+
+          # BEFORE part 00: the first transfer lost exactly one character.
+          target_before = 'fa7d1032339c22fb3d9f94fdb7b477a996ccf9cd'
+          p_before = Path('.staging/fhc-before-00.b64')
+          bad = p_before.read_bytes()
+          exact_first_half = Path('.staging/fhc-before-00a.b64').read_bytes()
+          if git_sha(bad) != target_before:
+              # If the missing character was in the first 10,000 chars, the exact
+              # first half plus the shifted tail reconstructs the source directly.
+              candidate = exact_first_half + bad[len(exact_first_half)-1:]
+              if git_sha(candidate) == target_before:
+                  bad = candidate
+              elif bad.startswith(exact_first_half):
+                  # Missing character is in the second half: brute-force only that
+                  # 9,999-character tail against the known exact Git blob SHA.
+                  tail = bad[len(exact_first_half):]
+                  found = None
+                  for pos in range(len(tail) + 1):
+                      prefix = exact_first_half + tail[:pos]
+                      suffix = tail[pos:]
+                      for ch in ALPHABET:
+                          candidate = prefix + bytes((ch,)) + suffix
+                          if git_sha(candidate) == target_before:
+                              found = candidate
+                              break
+                      if found is not None:
+                          break
+                  if found is None:
+                      raise SystemExit('Could not repair BEFORE part00 to its exact Git hash')
+                  bad = found
+              else:
+                  raise SystemExit('BEFORE part00 corruption is not the expected single-character loss')
+              p_before.write_bytes(bad)
+          assert git_sha(p_before.read_bytes()) == target_before
+          print('BEFORE part00 exact:', target_before)
+
+          # AFTER part 02: same length as the source; try the expected single-character
+          # substitution against the known exact Git blob SHA.
+          target_after = '1c189c0e5a5cae1e2024dbe965f701c1e0c05d6a'
+          p_after = Path('.staging/fhc-after-02.b64')
+          data = p_after.read_bytes()
+          if git_sha(data) != target_after:
+              found = None
+              for pos, old in enumerate(data):
+                  prefix = data[:pos]
+                  suffix = data[pos+1:]
+                  for ch in ALPHABET:
+                      if ch == old:
+                          continue
+                      candidate = prefix + bytes((ch,)) + suffix
+                      if git_sha(candidate) == target_after:
+                          found = candidate
+                          break
+                  if found is not None:
+                      break
+              if found is None:
+                  raise SystemExit('AFTER part02 is not a single-character substitution; stopped safely')
+              p_after.write_bytes(found)
+          assert git_sha(p_after.read_bytes()) == target_after
+          print('AFTER part02 exact:', target_after)
+          PY
+
+      - name: Reconstruct and verify screenshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p assets/examples
+
+          cat .staging/fhc-before-00.b64 .staging/fhc-before-01.b64 .staging/fhc-before-02.b64 | base64 -d > assets/examples/full-health-check-before.webp
+          cat .staging/fhc-after-00.b64 .staging/fhc-after-01a.b64 .staging/fhc-after-01b.b64 .staging/fhc-after-02.b64 | base64 -d > assets/examples/full-health-check-after.webp
+
+          echo '41a4944cb61bfee2bde0a21e3aa2c9e0ba3515f1c8f640b623375351cca37aef  assets/examples/full-health-check-before.webp' | sha256sum -c -
+          echo 'bbaecba62fb82695e70be9be5626fc94e84e1e5cf938b76ee17dbf8b69669fb7  assets/examples/full-health-check-after.webp' | sha256sum -c -
+
+          test "$(head -c 4 assets/examples/full-health-check-before.webp)" = 'RIFF'
+          test "$(dd if=assets/examples/full-health-check-before.webp bs=1 skip=8 count=4 status=none)" = 'WEBP'
+          test "$(head -c 4 assets/examples/full-health-check-after.webp)" = 'RIFF'
+          test "$(dd if=assets/examples/full-health-check-after.webp bs=1 skip=8 count=4 status=none)" = 'WEBP'
+
+      - name: Commit verified screenshots only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/examples/full-health-check-before.webp assets/examples/full-health-check-after.webp
+          git commit -m 'Add verified Full Health Check before and after screenshots'
+          git push origin HEAD:temp-healthcheck-assets
