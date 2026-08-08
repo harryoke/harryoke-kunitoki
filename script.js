@@ -79,21 +79,21 @@ if (problemStrip && !document.getElementById('examples')) {
         </div>
         <div class="repair-example-grid">
           <figure class="repair-example-card">
-            <a href="assets/examples/after-title.png" target="_blank" rel="noopener" aria-label="Open repaired title frame full size">
-              <img src="assets/examples/after-title.png" alt="CD+G title frame after repair" width="1152" height="768" loading="lazy">
+            <a href="assets/examples/after-title-fixed.webp" target="_blank" rel="noopener" aria-label="Open repaired title frame full size">
+              <img src="assets/examples/after-title-fixed.webp" alt="CD+G title frame after repair" width="1152" height="768" loading="lazy">
             </a>
             <figcaption><b>Repaired title frame</b><span>AFTER 01</span></figcaption>
           </figure>
           <figure class="repair-example-card">
-            <a href="assets/examples/after-lyrics.png" target="_blank" rel="noopener" aria-label="Open repaired lyric frame full size">
-              <img src="assets/examples/after-lyrics.png" alt="CD+G lyric frame after repair" width="1152" height="768" loading="lazy">
+            <a href="assets/examples/after-lyrics-fixed.webp" target="_blank" rel="noopener" aria-label="Open repaired lyric frame full size">
+              <img src="assets/examples/after-lyrics-fixed.webp" alt="CD+G lyric frame after repair" width="1152" height="768" loading="lazy">
             </a>
             <figcaption><b>Repaired lyric frame</b><span>AFTER 02</span></figcaption>
           </figure>
         </div>
       </div>
 
-      <p class="repair-examples-note reveal"><b>REAL OUTPUT</b><span>These are original 1152 × 768 screenshots supplied from the repair workflow and are shown without visual retouching.</span></p>
+      <p class="repair-examples-note reveal"><b>REAL OUTPUT</b><span>These are lossless web copies made from the original 1152 × 768 screenshots supplied from the repair workflow, with no visual retouching.</span></p>
     </div>
   `;
   problemStrip.insertAdjacentElement('afterend', section);
