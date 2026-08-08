@@ -24,7 +24,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat assets/examples/fhc/before-0.txt assets/examples/fhc/before-1.txt assets/examples/fhc/before-2a.txt assets/examples/fhc/before-2b.txt assets/examples/fhc/before-3.txt assets/examples/fhc/before-4.txt assets/examples/fhc/before-5.txt | base64 -d > assets/examples/full-health-check-before.webp
+          cat assets/examples/fhc/before-0.txt assets/examples/fhc/before-1a.txt assets/examples/fhc/before-1b.txt assets/examples/fhc/before-2a.txt assets/examples/fhc/before-2b.txt assets/examples/fhc/before-3.txt assets/examples/fhc/before-4.txt assets/examples/fhc/before-5.txt | base64 -d > assets/examples/full-health-check-before.webp
           cat assets/examples/fhc/after-0a.txt assets/examples/fhc/after-0b.txt assets/examples/fhc/after-1.txt assets/examples/fhc/after-2.txt assets/examples/fhc/after-3.txt assets/examples/fhc/after-4a.txt assets/examples/fhc/after-4b.txt assets/examples/fhc/after-5.txt | base64 -d > assets/examples/full-health-check-after.webp
           echo '9ffa6402439b9f2733c3e687bb96c7d1705ec2d7e99565ade162db05f2c1de78  assets/examples/full-health-check-before.webp' | sha256sum -c -
           echo '51db3a2b93880847df0d757305fd0c1a6e949c20b9bdf66b08e139ce30dc4103  assets/examples/full-health-check-after.webp' | sha256sum -c -
