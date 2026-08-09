@@ -143,6 +143,62 @@ if (problemStrip && !document.getElementById('examples')) {
   }
 }
 
+// Real CDG Doctor working demonstration hosted on YouTube.
+if (problemStrip && !document.getElementById('demo')) {
+  const demoStyles = document.createElement('style');
+  demoStyles.id = 'cdg-doctor-demo-style';
+  demoStyles.textContent = `
+    .demo-section{padding:86px 0 92px;border-bottom:1px solid rgba(82,224,255,.12);background:radial-gradient(circle at 70% 20%,rgba(47,210,255,.08),transparent 34%),linear-gradient(180deg,rgba(7,14,24,.96),rgba(5,10,18,.98))}
+    .demo-grid{display:grid;grid-template-columns:minmax(0,.78fr) minmax(0,1.22fr);gap:38px;align-items:center}
+    .demo-copy h2{margin:0 0 15px;color:#f4fbff;font-size:clamp(36px,5vw,58px);line-height:1.02;letter-spacing:-.045em}
+    .demo-copy>p:not(.eyebrow){margin:0 0 22px;color:#97adbd;font-size:17px;line-height:1.7;max-width:590px}
+    .demo-proof{display:flex;flex-wrap:wrap;gap:9px;margin:0 0 25px;padding:0;list-style:none}
+    .demo-proof li{padding:7px 10px;border:1px solid #17394b;border-radius:999px;background:rgba(9,23,35,.78);color:#9bb5c6;font-size:11px;font-weight:800;letter-spacing:.055em;text-transform:uppercase}
+    .demo-video{position:relative;overflow:hidden;aspect-ratio:16/9;border:1px solid rgba(79,223,255,.3);border-radius:16px;background:#020408;box-shadow:0 25px 70px rgba(0,0,0,.38),0 0 50px rgba(58,219,255,.045)}
+    .demo-video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+    .demo-youtube-link{display:inline-flex;align-items:center;gap:9px;color:#eaf8ff;font-size:13px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;text-decoration:none}
+    .demo-youtube-link span{color:#54e9ff}
+    .demo-youtube-link:hover{color:#63edff}
+    @media(max-width:900px){.demo-section{padding:68px 0 74px}.demo-grid{grid-template-columns:1fr;gap:27px}.demo-copy>p:not(.eyebrow){max-width:760px}}
+  `;
+  document.head.appendChild(demoStyles);
+
+  const demoSection = document.createElement('section');
+  demoSection.id = 'demo';
+  demoSection.className = 'demo-section';
+  demoSection.innerHTML = `
+    <div class="shell demo-grid">
+      <div class="demo-copy">
+        <p class="eyebrow"><span class="eyebrow-line"></span> REAL SOFTWARE DEMO</p>
+        <h2>See CDG Doctor working.</h2>
+        <p>Watch a real CDG Doctor session and see the repair workstation operating on CD+G graphics rather than relying on screenshots or feature claims alone.</p>
+        <ul class="demo-proof" aria-label="Video highlights">
+          <li>Real application</li>
+          <li>Real CD+G workflow</li>
+          <li>No mock-up</li>
+        </ul>
+        <a class="demo-youtube-link" href="https://www.youtube.com/watch?v=NpO1oQ730og" target="_blank" rel="noopener">Watch on YouTube <span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="demo-video">
+        <iframe src="https://www.youtube-nocookie.com/embed/NpO1oQ730og?rel=0" title="HazzKaraoke CDG Doctor working demonstration" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+      </div>
+    </div>
+  `;
+  problemStrip.insertAdjacentElement('afterend', demoSection);
+
+  if (nav && !nav.querySelector('a[href="#demo"]')) {
+    const demoLink = document.createElement('a');
+    demoLink.href = '#demo';
+    demoLink.textContent = 'Demo';
+    const examplesLink = nav.querySelector('a[href="#examples"]');
+    if (examplesLink) examplesLink.insertAdjacentElement('beforebegin', demoLink);
+    else {
+      const workflowLink = nav.querySelector('a[href="#workflow"]');
+      if (workflowLink) workflowLink.insertAdjacentElement('beforebegin', demoLink);
+    }
+  }
+}
+
 function closeMenu() {
   if (!menuButton || !nav) return;
   nav.classList.remove('open');
