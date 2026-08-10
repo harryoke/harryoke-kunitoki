@@ -1,0 +1,117 @@
+name: Publish CDG Doctor v1.8.0 website
+
+on:
+  push:
+    branches:
+      - cdg-doctor-site
+    paths:
+      - .github/workflows/publish-v180-site-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  publish-site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cdg-doctor-site
+
+      - name: Update website to v1.8.0
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def load(name):
+              return Path(name).read_text(encoding='utf-8')
+
+          def save(name, text):
+              Path(name).write_text(text, encoding='utf-8')
+
+          def must_replace(text, old, new, label, count=None):
+              found = text.count(old)
+              if found == 0:
+                  raise RuntimeError(f'{label}: expected text not found: {old!r}')
+              if count is not None and found != count:
+                  raise RuntimeError(f'{label}: expected {count} matches, found {found}: {old!r}')
+              return text.replace(old, new)
+
+          # Homepage
+          name = 'index.html'
+          s = load(name)
+          s = must_replace(s, 'script.js?v=demo-video1', 'script.js?v=v180', name, 1)
+          s = must_replace(s, '<span><b>158</b> tests passed</span>', '<span><b>190</b> tests passed</span>', name, 1)
+          s = must_replace(s, '16.7 MB', '18.0 MB', name)
+          s = must_replace(s, '22.7 MB', '24.0 MB', name)
+          s = must_replace(s,
+              'Analyse presentation style before conversion, including Smart Roll-up, Dynamic Row-Reuse routing and safety guards for incompatible material.',
+              'Analyse presentation style before conversion, including Smart Roll-up, Dynamic Row-Reuse, native-scroll hybrids and duet-aware safety guards.',
+              name, 1)
+          s = must_replace(s,
+              '<span>Dynamic Row-Reuse</span><span>Native Vertical Scroll</span><span>Horizontal Scroll guard</span><span>XOR / Colour Chase</span><span>Palette Animation</span><span>Transparency</span><span>Split-screen / duet guard</span>',
+              '<span>Dynamic Row-Reuse</span><span>Native Vertical Scroll</span><span>Hybrid scroll recognition</span><span>Duet Inspector</span><span>Horizontal Scroll guard</span><span>XOR / Colour Chase</span><span>Palette Animation</span><span>Transparency</span>',
+              name, 1)
+          s = s.replace('V1.7.1', 'V1.8.0').replace('v1.7.1', 'v1.8.0').replace('1.7.1', '1.8.0')
+          save(name, s)
+
+          # Downloads page
+          name = 'download.html'
+          s = load(name)
+          old_highlights = '<div class="content-panel reveal"><h2>v1.7.1 highlights</h2><ul><li>Full-width row-reuse lyric capture.</li><li>Protection against early XOR line erasure destroying rolled history.</li><li>Adjacent staging-row cleanup for compatible row-reuse authoring.</li><li>Strict event-order scheduling to prevent duplicate lyric lines.</li><li>Correct four-line roll-up geometry.</li><li>Smart Hybrid safety behaviour when packet budget is insufficient.</li><li>158 regression tests passed.</li></ul></div>'
+          new_highlights = '<div class="content-panel reveal"><h2>v1.8.0 highlights</h2><ul><li>Safer ECC handling for parity-less and non-standard commercial CD+G files.</li><li>Palette-animation, reset-transition and startup-priming false-positive protection.</li><li>Native Vertical Scroll + Dynamic Row-Reuse hybrid recognition.</li><li>Duet / Split-Screen Inspector with colour-role analysis.</li><li>Interactive singer-role overlays and Previous / Next hand-off navigation.</li><li>Smart Roll-up protection for colour-coded duets and existing scrolling hybrids.</li><li>Major performance improvement for palette-heavy tracks.</li><li>190 automated regression tests passed.</li></ul></div>'
+          s = must_replace(s, old_highlights, new_highlights, name, 1)
+          s = must_replace(s, '16.7 MB', '18.0 MB', name)
+          s = must_replace(s, '22.7 MB', '24.0 MB', name)
+          s = must_replace(s, '826d904450eceb4990f715c1f5d542ccbf96659cc334f37f90739dd8eb51911d', 'd3e0ab962eb5313a6c2a02acbf1182648c047e37e4fcdbb9c0628b90708c2026', name, 1)
+          s = must_replace(s, 'dd69c371c20e09e002d36933c7732251462be8c60a3f999088bb78d215fb1ac9', 'c8555922e1e3cdc92809678aec649a5adc885edd9f3c8b9bb00f13340cc8fd59', name, 1)
+          s = must_replace(s, '0af7430cf75a02c74e5df45b901994af327ce4e0a2731178365cfc2f215aebc7', 'eceae31aed808c1606065dd2425f5c255421b79521dc5475c3fbe1ee92734a43', name, 1)
+          s = must_replace(s, '<strong>158 automated tests passed</strong>', '<strong>190 automated tests passed</strong>', name, 1)
+          s = s.replace('V1.7.1', 'V1.8.0').replace('v1.7.1', 'v1.8.0').replace('1.7.1', '1.8.0')
+          save(name, s)
+
+          # Online manual
+          name = 'manual.html'
+          s = load(name)
+          marker = '</div><div class="content-panel"><h2>Projects, reports & preferences</h2>'
+          insert = ('</div><div class="content-panel"><h2>v1.8.0 repair safety</h2>'
+                    '<p>Doctor distinguishes missing parity, standard stored ECC, non-standard/unreliable ECC and plausible-but-unrecoverable graphics damage. Legacy files with no stored parity are not treated as mass corruption, and uncertain graphics commands are preserved for review instead of being blindly deleted.</p>'
+                    '<ul><li>Parity-less legacy media is protected from false ECC repair.</li><li>Non-standard ECC schemes are reported and preserved.</li><li>Palette-heavy animation and legal reset sequences are protected from false Critical findings.</li><li>Deep Recovery only attempts ECC work where meaningful stored ECC exists.</li></ul>'
+                    '</div><div class="content-panel"><h2>Hybrid scroll and Duet Inspector</h2>'
+                    '<p>v1.8.0 recognises Native Vertical Scroll + Dynamic Row-Reuse hybrids only when both behaviours occur in the same reset section. Style Converter preserves already-scrolling hybrids instead of re-converting them.</p>'
+                    '<p>The Duet Inspector analyses colour roles, spatial regions, timing and singer hand-offs without OCR or invented performer names. Interactive preview overlays are non-destructive and can jump to Previous / Next hand-offs. Shared-graphics duets are protected rather than given invented role overlays.</p>'
+                    + marker)
+          s = must_replace(s, marker, insert, name, 1)
+          s = s.replace('v1.7.1', 'v1.8.0').replace('1.7.1', '1.8.0')
+          save(name, s)
+
+          # Dummy's Guide
+          name = 'quick-start.html'
+          s = load(name)
+          marker = '<div class="content-panel"><h2>The audio and lyrics are out of sync</h2>'
+          insert = ('<div class="content-panel"><h2>I have a duet / split-screen track</h2><ol>'
+                    '<li>Open <strong>Style Converter</strong> and use <strong>Duet Inspector</strong>.</li>'
+                    '<li>Check the detected Colour Roles and singer hand-offs.</li>'
+                    '<li>Use Previous / Next hand-off to inspect role changes.</li>'
+                    '<li>If Doctor reports shared graphics or an unsafe duet structure, preserve it rather than forcing a roll-up conversion.</li>'
+                    '<li>The preview overlays are guides only; they do not alter the CD+G pixels.</li>'
+                    '</ol></div>' + marker)
+          s = must_replace(s, marker, insert, name, 1)
+          s = s.replace('v1.7.1', 'v1.8.0').replace('1.7.1', '1.8.0')
+          save(name, s)
+
+          # Fail if stale release references remain in the public pages.
+          for name in ('index.html','download.html','manual.html','quick-start.html'):
+              s = load(name)
+              if '1.7.1' in s or 'V1.7.1' in s or 'v1.7.1' in s:
+                  raise RuntimeError(f'{name}: stale v1.7.1 reference remains')
+
+      - name: Commit website release update
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html download.html manual.html quick-start.html
+          git diff --cached --check
+          git commit -m "Publish CDG Doctor v1.8.0 website"
+          git push origin HEAD:cdg-doctor-site
