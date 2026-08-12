@@ -28,25 +28,28 @@
 </header>
 <main>
 <section class="content-hero shell">
-<p class="eyebrow">COMPLETE REFERENCE • v2.0.3</p>
+<p class="eyebrow">COMPLETE REFERENCE • v2.0.5</p>
 <h1>Instruction Manual</h1>
 <p>A compact online reference to the main workflows and all 18 Doctor Tools. The application preview remains the final truth source after every repair.</p>
 </section>
 <section class="shell section" style="padding-top:20px">
 <div class="content-panel">
-<h2>New in v2.0.3: strict-player compatibility repair</h2>
-<p>Doctor now detects delayed repeated <strong>Memory Preset</strong> clears that can corrupt lyric pages in VLC, Karaoke Builder and OpenKJ while appearing normal in an older packet-skipping preview.</p>
-<p>CD+G is stateful: every Memory Preset, tile, XOR, palette and scroll command changes the decoder state. v2.0.3 processes every packet sequentially. Preview drawing can be throttled, but graphics commands are never skipped.</p>
-<h3>Repair workflow</h3>
+<h2>New in v2.0.5: assisted damaged-word repair</h2>
+<p>Doctor can replace a damaged word or group of letters without rebuilding the whole song. Enter the corrected text, draw a tight box around the damaged lyric and check the generated preview.</p>
+<p>The replacement is drawn in its normal base colour before singing begins, then follows the recovered original highlight/wipe timing. Doctor matches the source page's colours and closest font style, while Smaller, Auto Match and Larger controls allow a final size adjustment.</p>
+<h3>Assisted repair workflow</h3>
 <ol>
 <li>Keep the original CDG, matching audio and karaoke ZIP.</li>
 <li>Open the original track and run <strong>Full Health Check</strong>.</li>
-<li>Select the Critical delayed Memory Preset finding.</li>
-<li>Open <strong>Guided Repair Wizard</strong> or <strong>Repair Everything Safely</strong>.</li>
-<li>Preview and apply the timing-preserving repair to the working copy.</li>
-<li>Save a new/versioned file, then test the affected and later pages in the external karaoke player.</li>
+<li>Choose <strong>Fix Damaged Word / Letters</strong> and enter the correct text.</li>
+<li>Drag a tight box around only the damaged text in the Doctor preview.</li>
+<li>Use Smaller, Auto Match or Larger if the preview needs a size adjustment.</li>
+<li>If the box is wrong, use <strong>Undo Last Word Repair / Redraw Box</strong>.</li>
+<li>Click <strong>Apply Fix</strong>, move to the next offered location if required, then save a repaired copy.</li>
 </ol>
-<p>The SOKC-0221 regression track contains five delayed repeat packets. Doctor preserves the intended first clear and neutralises only the destructive later copies, keeping packet count, duration and audio synchronisation unchanged.</p>
+<p>The assisted operation changes only the selected tile region. It preserves packet count, duration, paired-audio timing and later pages. The supplied SFMW801-14 Angie Baby track was used to validate the complete workflow.</p>
+<h3>Strict-player compatibility retained</h3>
+<p>Doctor also detects delayed repeated <strong>Memory Preset</strong> clears that can corrupt lyric pages in VLC, Karaoke Builder and OpenKJ. Every graphics command is processed sequentially even when preview drawing is throttled. The SOKC-0221 timing-preserving repair remains enabled.</p>
 <h3>Page and fullscreen performance</h3>
 <p>Ordinary page generation no longer starts Advanced Presentation Analysis automatically. Run that deeper scan explicitly from Style Converter. Maximise, restore and fullscreen refresh only the visible workspace; hidden tool previews update when opened.</p>
 </div>
@@ -187,7 +190,7 @@
 <span>Repair • Recover • Edit • Rebuild</span>
 </div>
 <div>
-<span>Version 2.0.3</span>
+<span>Version 2.0.5</span>
 <span>© 2026 HazzKaraoke. All rights reserved.</span>
 </div>
 </div>
