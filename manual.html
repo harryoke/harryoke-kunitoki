@@ -28,26 +28,38 @@
 </header>
 <main>
 <section class="content-hero shell">
-<p class="eyebrow">COMPLETE REFERENCE • v2.0.5</p>
+<p class="eyebrow">COMPLETE REFERENCE • v2.0.6</p>
 <h1>Instruction Manual</h1>
 <p>A compact online reference to the main workflows and all 18 Doctor Tools. The application preview remains the final truth source after every repair.</p>
 </section>
 <section class="shell section" style="padding-top:20px">
 <div class="content-panel">
-<h2>New in v2.0.5: assisted damaged-word repair</h2>
-<p>Doctor can replace a damaged word or group of letters without rebuilding the whole song. Enter the corrected text, draw a tight box around the damaged lyric and check the generated preview.</p>
-<p>The replacement is drawn in its normal base colour before singing begins, then follows the recovered original highlight/wipe timing. Doctor matches the source page's colours and closest font style, while Smaller, Auto Match and Larger controls allow a final size adjustment.</p>
+<h2>New in v2.0.6: guided one-click and deeper repair</h2>
+<p>Full Health Check now leads from diagnosis through automatic repair and visual verification. Doctor first displays the error information, then offers <strong>Fix Everything Safely</strong> when high-confidence repairs are available. The original source remains untouched.</p>
+<p>The one-click result opens on the complete page containing the first error, with <strong>Original</strong> and <strong>One-click Fix</strong> side by side. A responsive full-track slider uses cached one-second render checkpoints so pages update quickly while you search the timeline.</p>
+<ol>
+<li>Open the original CDG or karaoke ZIP and run <strong>Full Health Check</strong>.</li>
+<li>Read the error report and choose <strong>Fix Everything Safely</strong>.</li>
+<li>Compare Original and Fixed on the first-error page.</li>
+<li>Drag the slider through the entire track while both versions remain visible.</li>
+<li>Click <strong>Continue</strong> and choose Keep Reviewing, Happy — Save Fixed File, or Continue to Deeper Fixes.</li>
+<li>Deeper Fixes rescans the fixed working copy and starts Assisted Word Repair only for remaining visible damage.</li>
+</ol>
+<h3>Assisted Word Repair</h3>
+<p>Doctor can replace a damaged word or group of letters without rebuilding the whole song. It is available from the deeper fixed-copy route or directly through the dedicated <strong>Assisted Word Repair</strong> action on Doctor.</p>
+<p>The replacement is drawn at full height in its normal base colour before singing begins, then follows the recovered original highlight/wipe timing. Doctor matches the page's colours and closest font style. Smaller, Auto Match and Larger adjust size; Move Up, Move Down and Reset Position align the baseline one pixel at a time.</p>
 <h3>Assisted repair workflow</h3>
 <ol>
 <li>Keep the original CDG, matching audio and karaoke ZIP.</li>
-<li>Open the original track and run <strong>Full Health Check</strong>.</li>
-<li>Choose <strong>Fix Damaged Word / Letters</strong> and enter the correct text.</li>
+<li>Use Continue to Deeper Fixes after one-click review, or click <strong>Assisted Word Repair</strong> directly.</li>
+<li>Enter the correct word or letters.</li>
 <li>Drag a tight box around only the damaged text in the Doctor preview.</li>
 <li>Use Smaller, Auto Match or Larger if the preview needs a size adjustment.</li>
+<li>Use Move Up or Move Down to align the replacement, or Reset Position to return to the detected line.</li>
 <li>If the box is wrong, use <strong>Undo Last Word Repair / Redraw Box</strong>.</li>
-<li>Click <strong>Apply Fix</strong>, move to the next offered location if required, then save a repaired copy.</li>
+<li>Click <strong>Apply Word Fix</strong>. Doctor advances through the remaining damaged locations, then save a repaired copy.</li>
 </ol>
-<p>The assisted operation changes only the selected tile region. It preserves packet count, duration, paired-audio timing and later pages. The supplied SFMW801-14 Angie Baby track was used to validate the complete workflow.</p>
+<p>The assisted operation changes only the selected tile region. It preserves packet count, duration, paired-audio timing, later pages and the scheduled singing wipe. If safe packet capacity is too fragmented, Doctor refuses the preview instead of drawing a split or late word.</p>
 <h3>Strict-player compatibility retained</h3>
 <p>Doctor also detects delayed repeated <strong>Memory Preset</strong> clears that can corrupt lyric pages in VLC, Karaoke Builder and OpenKJ. Every graphics command is processed sequentially even when preview drawing is throttled. The SOKC-0221 timing-preserving repair remains enabled.</p>
 <h3>Page and fullscreen performance</h3>
@@ -84,7 +96,7 @@
 <div class="content-panel">
 <h2>Repair tools</h2>
 <h3>1. Doctor / Full Health Check</h3>
-<p>Whole-file diagnostics for packet structure, palettes, graphics, timing and presentation clues. Use it first when you do not yet know what is wrong.</p>
+<p>Whole-file diagnostics for packet structure, palettes, graphics, timing and presentation clues. The v2.0.6 guided route reports the errors, offers one-click safe repair, opens full-track Original / Fixed comparison and can rescan the fixed working copy for deeper Assisted Word Repair. A dedicated Assisted Word Repair action also works directly from the selected finding or current timeline.</p>
 <h3>2. Smart Rebuild</h3>
 <p>Reconstructs damaged or unreadable lyric regions from surviving timing and graphics evidence. Timing DNA and Style DNA have clear enabled/off states, while the lettering controls can use installed Windows fonts with automatic or manual sizing.</p>
 <h3>3. Deep Recovery</h3>
@@ -164,6 +176,7 @@
 <ul>
 <li>
 <strong>Unreadable lyrics:</strong> Doctor → Smart Rebuild / Deep Recovery / Style Converter depending on diagnosis.</li>
+<li><strong>Known damaged word or letters:</strong> Doctor → Assisted Word Repair.</li>
 <li>
 <strong>Wrong colours:</strong> Colour Doctor.</li>
 <li>
@@ -190,7 +203,7 @@
 <span>Repair • Recover • Edit • Rebuild</span>
 </div>
 <div>
-<span>Version 2.0.5</span>
+<span>Version 2.0.6</span>
 <span>© 2026 HazzKaraoke. All rights reserved.</span>
 </div>
 </div>
